@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Xenon Screenshot Generator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600&display=swap');
+
+        /* ЧИСТЫЙ ХОЛСТ */
+        body {
+            background-color: #ffffff; /* Белый фон */
+            margin: 0;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 40px; 
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* --- 1. ВАТЕРМАРКА (Сверху) --- */
+        .watermark {
+            background: #0f0f11;
+            padding: 10px 25px;
+            border-radius: 8px;
+            border: 1px solid #27272a;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+        /* RGB Линия */
+        .watermark::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff);
+            background-size: 400%; animation: rgb-flow 3s linear infinite;
+        }
+        .wm-sep { width: 1px; height: 15px; background: #333; }
+        .wm-ver { color: #10b981; } 
+
+        /* --- 2. МЕНЮ ЧИТА (Снизу) --- */
+        .menu-window {
+            width: 700px;
+            height: 450px;
+            background: #0a0a0c;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 0 1px #1e1e24, 0 0 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        /* RGB Рамка */
+        .menu-border {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 12px;
+            pointer-events: none;
+            border: 1px solid transparent;
+            mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff, #ff0000) border-box;
+            background-size: 400%;
+            animation: rgb-flow 5s linear infinite;
+            opacity: 0.5;
+        }
+
+        /* Верхняя панель */
+        .menu-header {
+            height: 60px;
+            border-bottom: 1px solid #1e1e24;
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.01);
+        }
+        .menu-logo { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 800; color: #fff; letter-spacing: 2px; }
+        .menu-logo span { color: #3b82f6; }
+        .menu-tabs { display: flex; gap: 20px; }
+        .m-tab { color: #666; font-size: 14px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .m-tab.active { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        /* Контент */
+        .menu-body { display: flex; height: 100%; }
+        
+        .sidebar { width: 180px; border-right: 1px solid #1e1e24; padding: 20px 0; display: flex; flex-direction: column; gap: 5px; }
+        .sb-item { padding: 10px 25px; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .sb-item.active { color: #fff; background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent); border-left: 3px solid #3b82f6; }
+        .sb-icon { width: 16px; text-align: center; }
+
+        .content-area { flex: 1; padding: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-content: start; }
+
+        .feature-box {
+            background: #131316; border: 1px solid #27272a; border-radius: 6px;
+            padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .feat-name { color: #d1d5db; font-size: 13px; font-weight: 500; }
+        
+        .checkbox { width: 36px; height: 18px; background: #27272a; border-radius: 10px; position: relative; cursor: pointer; transition: 0.3s; }
+        .checkbox.on { background: #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
+        .checkbox::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: 0.3s; }
+        .checkbox.on::after { left: 20px; }
+
+        .slider-container { grid-column: span 2; background: #131316; border: 1px solid #27272a; border-radius: 6px; padding: 10px 15px; }
+        .slider-header { display: flex; justify-content: space-between; color: #d1d5db; font-size: 12px; margin-bottom: 8px; }
+        .slider-track { width: 100%; height: 4px; background: #27272a; border-radius: 4px; position: relative; }
+        .slider-fill { width: 60%; height: 100%; background: #3b82f6; border-radius: 4px; position: relative; box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+        .slider-thumb { position: absolute; right: -6px; top: -4px; width: 12px; height: 12px; background: #fff; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+
+        @keyframes rgb-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">
+        @NGFSOFT
+        <div class="wm-sep"></div>
+        ANDROID NO ROOT
+        <div class="wm-sep"></div>
+        <span class="wm-ver">0.37.0</span>
+    </div>
+
+    <div class="menu-window">
+        <div class="menu-border"></div>
+        
+        <div class="menu-header">
+            <div class="menu-logo">XENON <span>NO ROOT</span></div>
+            <div class="menu-tabs">
+                <div class="m-tab active">RAGE</div>
+                <div class="m-tab">LEGIT</div>
+                <div class="m-tab">VISUALS</div>
+                <div class="m-tab">SKINS</div>
+                <div class="m-tab">MISC</div>
+            </div>
+        </div>
+
+        <div class="menu-body">
+            <div class="sidebar">
+                <div class="sb-item active"><span class="sb-icon">🎯</span> Aimbot</div>
+                <div class="sb-item"><span class="sb-icon">⚙</span> Config</div>
+                <div class="sb-item"><span class="sb-icon">📡</span> Radar</div>
+            </div>
+
+            <div class="content-area">
+                <div class="feature-box">
+                    <span class="feat-name">Enable Rage Bot</span>
+                    <div class="checkbox on"></div>
+                </div>
+                <div class="feature-box">
+                    <span class="feat-name">Silent Aim</span>
+                    <div class="checkbox on"></div>
+                </div>
+                <div class="feature-box">
+                    <span class="feat-name">Auto Fire</span>
+                    <div class="checkbox on"></div>
+                </div>
+                <div class="feature-box">
+                    <span class="feat-name">Wall Shot</span>
+                    <div class="checkbox"></div>
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header"><span>FOV Radius</span> <span>120°</span></div>
+                    <div class="slider-track"><div class="slider-fill"><div class="slider-thumb"></div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
